@@ -1,0 +1,12 @@
+# Copyright (C) 2026 XPATSOFT INNOVATION
+# This file is distributed under the same license as the XPATSOFT TOOLS package.
+msgid ""
+msgstr ""
+"Project-Id-Version: XPATSOFT TOOLS 1.0.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Tool not found."
+msgstr ""
+
+msgid "This tool is currently unavailable."
+msgstr ""

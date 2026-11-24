@@ -1,0 +1,7 @@
+.inv-doc{font-family:system-ui,sans-serif;color:#111}
+.inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:12px}
+.inv-table{width:100%;border-collapse:collapse;margin:12px 0}
+.inv-table th,.inv-table td{border:1px solid #ddd;padding:8px;text-align:left}
+.inv-totals{margin-left:auto;max-width:280px}
+.inv-totals div{display:flex;justify-content:space-between;padding:4px 0}
+.inv-paid-badge{display:inline-block;background:#111;color:#fff;padding:4px 12px;border-radius:999px;font-weight:700}

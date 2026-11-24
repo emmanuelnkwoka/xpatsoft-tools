@@ -1,0 +1,8 @@
+.xpatsoft-admin-wrap{max-width:1100px}
+.xpatsoft-admin-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+.xpatsoft-admin-card{background:#fff;border:1px solid #ccd0d4;padding:16px;border-radius:4px}
+.xpatsoft-admin-card b{font-size:28px;display:block}
+.xpatsoft-admin-table{width:100%;border-collapse:collapse;background:#fff}
+.xpatsoft-admin-table th,.xpatsoft-admin-table td{border:1px solid #ccd0d4;padding:10px;text-align:left}
+.xpatsoft-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+.xpatsoft-badge.on{background:#d5e8d4}.xpatsoft-badge.off{background:#f8d7da}
