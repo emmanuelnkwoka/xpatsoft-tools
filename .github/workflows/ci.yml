@@ -95,9 +95,9 @@ jobs:
         run: |
           echo "node: $(node --version) / npm: $(npm --version) / cwd: $(pwd)"
           npm init -y > /dev/null 2>&1
-          npm install --no-audit --no-fund --loglevel=error --prefix "$GITHUB_WORKSPACE" \
-            pdf-lib@1.17.1 pdfjs-dist@3.11.174
-          ls -d "$GITHUB_WORKSPACE/node_modules/pdf-lib" "$GITHUB_WORKSPACE/node_modules/pdfjs-dist"
+          npm install --no-audit --no-fund --loglevel=error pdf-lib@1.17.1 pdfjs-dist@3.11.174
+          ls -d node_modules/pdf-lib node_modules/pdfjs-dist
+          echo "XPATSOFT_PDF_DEPS=$PWD/node_modules" >> "$GITHUB_ENV"
           echo "--- installed packages ---"
           node -e "\
             for (const s of ['pdf-lib','pdfjs-dist','pdfjs-dist/legacy/build/pdf.js']) { \
@@ -108,7 +108,6 @@ jobs:
           npm ls --depth=0 || true
 
       - name: PDF text-preservation verification
-        working-directory: .
         run: |
           set +e
           out=$(node tests/verify-pdf-text.js 2>&1)
