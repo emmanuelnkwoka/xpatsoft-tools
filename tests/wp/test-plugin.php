@@ -113,6 +113,10 @@ class XPATSOFT_WP_Test extends WP_UnitTestCase {
 		$this->assertSame( '1 KB', XPATSOFT_Helpers::format_bytes( 1024, 0 ) ); /* precision is an argument */
 		$this->assertSame( '1.5 KB', XPATSOFT_Helpers::format_bytes( 1536, 2 ) );
 		$this->assertSame( 'scriptxssscript', XPATSOFT_Helpers::sanitize_id( '<script>xss</script>' ) );
-		$this->assertSame( 'my-tool', XPATSOFT_Helpers::sanitize_id( 'My Tool' ) );
+		// sanitize_id strips everything outside [a-z0-9-_] and lowercases, so a
+		// space is removed rather than converted to a hyphen.
+		$this->assertSame( 'mytool', XPATSOFT_Helpers::sanitize_id( 'My Tool' ) );
+		$this->assertSame( 'my-tool', XPATSOFT_Helpers::sanitize_id( 'my-tool' ), 'hyphens preserved' );
+		$this->assertSame( 'word-counter', XPATSOFT_Helpers::sanitize_id( '../../word-counter' ), 'path segments dropped' );
 	}
 }
