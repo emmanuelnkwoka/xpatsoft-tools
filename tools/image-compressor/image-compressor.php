@@ -5,7 +5,7 @@ XPATSOFT_Registry::register( 'image-compressor', array(
     'description' => 'Compress JPG, PNG and WebP images in batch, entirely in your browser. Quality slider and ZIP download.',
     'category' => 'Files',
     'icon' => 'dashicons-format-image',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
     'popular' => true,
     'keywords' => 'image compressor compress jpg png webp zip',
     'instructions' => 'Add images, set quality and output format, then compress and download individually or as ZIP. Processing is local.',

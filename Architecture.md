@@ -45,3 +45,17 @@ See Tool-development-guide.md. No changes to existing modules required.
 ## Performance
 
 Browser-first, zero AJAX, minimal DB (2 options). CDN with version pins. 50 MB PDF guard for low-memory devices.
+
+## Changes in v1.1.0
+
+- **New shared script**: `assets/js/xpatsoft-utils.js` (filenames, byte formatting, reduction %,
+  safe text setter, download helper). Registered as `xpatsoft-utils` and a dependency of every tool
+  module; also exported as CommonJS so Node tests exercise the identical code.
+- **Asset registration**: `assets/vendor/` replaces all CDN URLs. Vendor scripts keep their own handles
+  (`qrcode-generator`, `pdf-lib`, `pdfjs`, `jszip`, `jspdf`, `html2canvas`) so a tool only loads what it
+  needs, still gated behind that tool's shortcode.
+- **PDF module**: two explicit strategies — `optimise` (pdf-lib page copy, text/vector preserving) and
+  `rebuild` (pdf.js raster, opt-in). The worker URL comes from `wp_localize_script`, not a CDN.
+- **Testing tree**: `tests/run-js-tests.js` (unit), `tests/run-regression-tests.js` (security/regression),
+  `tests/verify-pdf-text.js` (PDF text preservation), `tests/wp/` (WordPress PHPUnit), `bin/` (WP test
+  suite installer), `.github/workflows/ci.yml` (three jobs).

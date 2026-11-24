@@ -43,7 +43,7 @@ function wp_check_filetype_and_ext($t,$n,$m){ return array('ext'=>'pdf'); }
 function is_uploaded_file($f){ return true; }
 class WP_Error{ public $code; public $msg; function __construct($c,$m){$this->code=$c;$this->msg=$m;} }
 define('ABSPATH','/tmp/');
-define('XPATSOFT_TOOLS_VERSION','1.0.0');
+define('XPATSOFT_TOOLS_VERSION','1.1.0');
 define('XPATSOFT_TOOLS_FILE', __DIR__.'/../xpatsoft-tools.php');
 define('XPATSOFT_TOOLS_PATH', __DIR__.'/../');
 define('XPATSOFT_TOOLS_URL','https://example.test/wp-content/plugins/xpatsoft-tools/');
@@ -101,7 +101,9 @@ ok( method_exists('XPATSOFT_Shortcodes','render_tool'), 'render_tool exists' );
 $all = '';
 $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
 foreach ( $it as $f ) { if ( $f->isFile() && substr($f->getFilename(),-4)==='.php' && strpos($f->getPathname(),'/tests/')===false ) $all .= file_get_contents($f->getPathname()); }
-ok( strpos($all,'eval(')===false, 'no eval()' );
+// Split the needle so this assertion cannot match its own source line.
+$eval_needle = 'ev' . 'al' . chr( 40 );
+ok( strpos($all,$eval_needle)===false, 'no dynamic code execution' );
 ok( !preg_match('/(api[_-]?key|password|secret)\s*=\s*['"][A-Za-z0-9]{16,}/i',$all), 'no hardcoded secrets' );
 ok( strpos($all,'manage_options')!==false, 'capability check present' );
 ok( strpos($all,'wp_verify_nonce')!==false, 'nonce check present' );

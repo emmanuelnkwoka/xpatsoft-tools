@@ -5,7 +5,7 @@ XPATSOFT_Registry::register( 'qr-code-generator', array(
     'description' => 'Create static QR codes for URLs, text, Wi-Fi, WhatsApp, email, phone and vCards. Download PNG or SVG.',
     'category' => 'Generators',
     'icon' => 'dashicons-camera',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
     'popular' => true,
     'keywords' => 'qr code generator wifi whatsapp vcard png svg',
     'instructions' => 'Choose a QR type, enter details, customise colours and size, then download PNG or SVG. All generation happens locally in your browser.',

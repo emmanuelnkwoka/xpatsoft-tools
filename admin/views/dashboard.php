@@ -18,14 +18,14 @@
         <td><strong><?php echo esc_html( $t['title'] ); ?></strong><br><code><?php echo esc_html( $id ); ?></code></td>
         <td><?php echo esc_html( $t['category'] ); ?></td>
         <td><?php echo esc_html( $t['version'] ); ?></td>
-        <td><span class="xpatsoft-badge <?php echo $on ? 'on' : 'off'; ?>"><?php echo $on ? 'Active' : 'Inactive'; ?></span></td>
+        <td><span class="xpatsoft-badge <?php echo esc_attr( $on ? 'on' : 'off' ); ?>"><?php echo esc_html( $on ? 'Active' : 'Inactive' ); ?></span></td>
         <td>
           <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <?php XPATSOFT_Security::nonce_field(); ?>
             <input type="hidden" name="action" value="xpatsoft_toggle_tool">
             <input type="hidden" name="tool_id" value="<?php echo esc_attr( $id ); ?>">
-            <input type="hidden" name="active" value="<?php echo $on ? '0' : '1'; ?>">
-            <button class="button"><?php echo $on ? 'Deactivate' : 'Activate'; ?></button>
+            <input type="hidden" name="active" value="<?php echo esc_attr( $on ? '0' : '1' ); ?>">
+            <button class="button"><?php echo esc_html( $on ? 'Deactivate' : 'Activate' ); ?></button>
           </form>
         </td>
       </tr>

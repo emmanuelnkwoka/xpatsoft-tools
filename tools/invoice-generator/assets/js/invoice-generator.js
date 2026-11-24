@@ -1,18 +1,24 @@
 (function(){
   'use strict';
   function $(id){return document.getElementById(id);}
+  function el(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
   var SYM={NGN:'\u20A6',USD:'$',GBP:'\u00A3',EUR:'\u20AC',GHS:'GH\u20B5',KES:'KSh ',ZAR:'R'};
   function money(v,cur){ return (SYM[cur]||cur+' ')+Number(v||0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  // Integer minor-unit math to avoid float errors: work in cents.
   function toCents(v){ return Math.round((parseFloat(v)||0)*100); }
   function fromCents(c){ return c/100; }
   function addItem(desc,qty,price){
-    var row=document.createElement('div'); row.className='xpatsoft-row inv-item-row';
-    row.innerHTML='<div class="xpatsoft-field"><label>Description</label><input class="it-desc" value="'+(desc||'Service')+'"></div>'+
-      '<div class="xpatsoft-field"><label>Qty</label><input class="it-qty" type="number" min="0" step="1" value="'+(qty||1)+'"></div>'+
-      '<div class="xpatsoft-field"><label>Unit price</label><input class="it-price" type="number" min="0" step="0.01" value="'+(price||0)+'"></div>'+
-      '<div class="xpatsoft-field"><label>&nbsp;</label><button class="xpatsoft-btn secondary it-del">Remove</button></div>';
-    row.querySelector('.it-del').addEventListener('click',function(){row.remove();});
+    var row=el('div','xpatsoft-row inv-item-row');
+    var f1=el('div','xpatsoft-field'); f1.appendChild(el('label',null,'Description'));
+    var i1=document.createElement('input'); i1.className='it-desc'; i1.value=desc||'Service'; f1.appendChild(i1);
+    var f2=el('div','xpatsoft-field'); f2.appendChild(el('label',null,'Qty'));
+    var i2=document.createElement('input'); i2.className='it-qty'; i2.type='number'; i2.min='0'; i2.step='1'; i2.value=qty||1; f2.appendChild(i2);
+    var f3=el('div','xpatsoft-field'); f3.appendChild(el('label',null,'Unit price'));
+    var i3=document.createElement('input'); i3.className='it-price'; i3.type='number'; i3.min='0'; i3.step='0.01'; i3.value=price||0; f3.appendChild(i3);
+    var f4=el('div','xpatsoft-field'); f4.appendChild(el('label',null,'\u00A0'));
+    var del=el('button','xpatsoft-btn secondary','Remove'); del.type='button';
+    del.addEventListener('click',function(){row.remove();});
+    f4.appendChild(del);
+    row.appendChild(f1); row.appendChild(f2); row.appendChild(f3); row.appendChild(f4);
     $('inv-items').appendChild(row);
   }
   function calc(){
@@ -33,26 +39,63 @@
     var balC=totalC-paidC;
     return {cur:cur,subC:subC,discC:discC,taxC:taxC,totalC:totalC,paidC:paidC,balC:balC,taxPct:taxPct,discPct:discPct};
   }
-  function esc(s){return String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function render(){
     var c=calc(), mode=$('inv-mode').value;
-    var rows=''; document.querySelectorAll('.inv-item-row').forEach(function(r){
+    var box=$('inv-preview'); box.textContent='';
+    var doc=el('div','inv-doc');
+    var head=el('div','inv-head');
+    var left=document.createElement('div');
+    left.appendChild(el('h2',null,(mode==='receipt'?'RECEIPT ':'INVOICE ')+$('inv-number').value));
+    var biz=el('p');
+    biz.textContent=$('biz-name').value+'\n'+$('biz-addr').value+'\n'+$('biz-email').value+' \u00B7 '+$('biz-phone').value+'\n'+$('biz-bank').value;
+    biz.style.whiteSpace='pre-line';
+    left.appendChild(biz);
+    var right=document.createElement('div'); right.style.textAlign='right';
+    var meta=el('p'); meta.textContent='Date: '+$('inv-date').value+'\nDue: '+$('inv-due').value; meta.style.whiteSpace='pre-line';
+    right.appendChild(meta);
+    if(mode==='receipt' && c.balC<=0) right.appendChild(el('span','inv-paid-badge','PAID'));
+    head.appendChild(left); head.appendChild(right); doc.appendChild(head);
+    var bill=el('p');
+    var strong=el('strong',null,'Bill to: '); bill.appendChild(strong);
+    bill.appendChild(document.createTextNode($('cust-name').value+'\n'+$('cust-addr').value+'\n'+$('cust-email').value));
+    bill.style.whiteSpace='pre-line'; doc.appendChild(bill);
+    var table=el('table','inv-table');
+    var thead=document.createElement('thead'); var hr=document.createElement('tr');
+    ['Description','Qty','Unit','Amount'].forEach(function(h){ hr.appendChild(el('th',null,h)); });
+    thead.appendChild(hr); table.appendChild(thead);
+    var tbody=document.createElement('tbody');
+    var rows=document.querySelectorAll('.inv-item-row');
+    if(!rows.length){
+      var tr=document.createElement('tr'); var td=el('td',null,'No items. Add at least one item.'); td.colSpan=4; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    rows.forEach(function(r){
       var d=r.querySelector('.it-desc').value,q=r.querySelector('.it-qty').value,p=r.querySelector('.it-price').value;
       var line=fromCents(Math.round((parseFloat(q)||0)*toCents(p)));
-      rows+='<tr><td>'+esc(d)+'</td><td>'+esc(q)+'</td><td>'+money(p,c.cur)+'</td><td>'+money(line,c.cur)+'</td></tr>';
+      var tr=document.createElement('tr');
+      [d,q,money(p,c.cur),money(line,c.cur)].forEach(function(v){ tr.appendChild(el('td',null,v)); });
+      tbody.appendChild(tr);
     });
-    if(!rows) rows='<tr><td colspan="4">No items. Add at least one item.</td></tr>';
-    var title=mode==='receipt'?'RECEIPT':'INVOICE';
-    var paidBadge=mode==='receipt'&&c.balC<=0?'<span class="inv-paid-badge">PAID</span>':'';
-    $('inv-preview').innerHTML='<div class="inv-doc"><div class="inv-head"><div><h2>'+title+' '+esc($('inv-number').value)+'</h2><p>'+esc($('biz-name').value)+'<br>'+esc($('biz-addr').value)+'<br>'+esc($('biz-email').value)+' &middot; '+esc($('biz-phone').value)+'<br>'+esc($('biz-bank').value)+'</p></div><div style="text-align:right"><p>Date: '+esc($('inv-date').value)+'<br>Due: '+esc($('inv-due').value)+'<br>'+paidBadge+'</p></div></div>'+
-      '<p><strong>Bill to:</strong> '+esc($('cust-name').value)+'<br>'+esc($('cust-addr').value)+'<br>'+esc($('cust-email').value)+'</p>'+
-      '<table class="inv-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<div class="inv-totals"><div><span>Subtotal</span><span>'+money(fromCents(c.subC),c.cur)+'</span></div>'+
-      '<div><span>Discount ('+c.discPct+'%)</span><span>-'+money(fromCents(c.discC),c.cur)+'</span></div>'+
-      '<div><span>Tax/VAT ('+c.taxPct+'%)</span><span>'+money(fromCents(c.taxC),c.cur)+'</span></div>'+
-      '<div><strong>Total</strong><strong>'+money(fromCents(c.totalC),c.cur)+'</strong></div>'+
-      (mode==='receipt'?'<div><span>Amount paid</span><span>'+money(fromCents(c.paidC),c.cur)+'</span></div><div><span>Outstanding</span><span>'+money(fromCents(c.balC),c.cur)+'</span></div><div><span>Method</span><span>'+esc($('inv-paymethod').value)+'</span></div>':'')+
-      '</div><p>'+esc($('inv-notes').value)+'</p><p style="font-size:.8rem;color:#666">This document is generated locally and does not constitute legal or tax advice.</p></div>';
+    table.appendChild(tbody); doc.appendChild(table);
+    var totals=el('div','inv-totals');
+    function trow(label,val,bold){
+      var d=document.createElement('div');
+      d.appendChild(el(bold?'strong':'span',null,label));
+      d.appendChild(el(bold?'strong':'span',null,val));
+      totals.appendChild(d);
+    }
+    trow('Subtotal',money(fromCents(c.subC),c.cur),false);
+    trow('Discount ('+c.discPct+'%)','-'+money(fromCents(c.discC),c.cur),false);
+    trow('Tax/VAT ('+c.taxPct+'%)',money(fromCents(c.taxC),c.cur),false);
+    trow('Total',money(fromCents(c.totalC),c.cur),true);
+    if(mode==='receipt'){
+      trow('Amount paid',money(fromCents(c.paidC),c.cur),false);
+      trow('Outstanding',money(fromCents(c.balC),c.cur),false);
+      trow('Method',$('inv-paymethod').value,false);
+    }
+    doc.appendChild(totals);
+    doc.appendChild(el('p',null,$('inv-notes').value));
+    doc.appendChild(el('p',null,'This document is generated locally and does not constitute legal or tax advice.'));
+    box.appendChild(doc);
   }
   document.addEventListener('DOMContentLoaded', function(){
     if(!$('inv-mode')) return;
@@ -63,14 +106,13 @@
     $('inv-print').addEventListener('click',function(){render(); window.print();});
     $('inv-clear').addEventListener('click',function(){location.reload();});
     $('inv-whatsapp').addEventListener('click',function(){
-      var c=calc(); var txt=($('inv-mode').value==='receipt'?'Receipt ':'Invoice ')+$('inv-number').value+' — Total '+money(fromCents(c.totalC),c.cur)+' from '+$('biz-name').value;
-      window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+      var c=calc(); var txt=( $('inv-mode').value==='receipt'?'Receipt ':'Invoice ')+$('inv-number').value+' \u2014 Total '+money(fromCents(c.totalC),c.cur)+' from '+$('biz-name').value;
+      window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener');
     });
     $('inv-download').addEventListener('click',function(){
       render();
       if(typeof jspdf==='undefined'||typeof html2canvas==='undefined'){ alert('PDF library not loaded. Use Print / Save as PDF instead.'); return; }
-      var el=$('inv-preview');
-      html2canvas(el,{scale:2}).then(function(canvas){
+      html2canvas($('inv-preview'),{scale:2}).then(function(canvas){
         var pdf=new jspdf.jsPDF('p','mm','a4');
         var img=canvas.toDataURL('image/jpeg',0.95);
         var w=pdf.internal.pageSize.getWidth()-20;

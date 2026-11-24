@@ -5,7 +5,7 @@ XPATSOFT_Registry::register( 'invoice-generator', array(
     'description' => 'Create professional invoices and receipts with multi-currency support, Nigerian VAT preset and PDF export.',
     'category' => 'Business',
     'icon' => 'dashicons-media-document',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
     'popular' => true,
     'keywords' => 'invoice receipt generator vat ngn pdf',
     'instructions' => 'Enter business and customer details, add line items, set discount and tax, then preview, print or export PDF. All data stays in your browser.',

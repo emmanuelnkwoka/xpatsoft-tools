@@ -5,7 +5,7 @@ XPATSOFT_Registry::register( 'word-counter', array(
     'description' => 'Live word count, reading time, keyword density and social platform limits. 100% in your browser.',
     'category' => 'Text',
     'icon' => 'dashicons-editor-textcolor',
-    'version' => '1.0.0',
+    'version' => '1.1.0',
     'popular' => true,
     'keywords' => 'word counter character counter reading time keyword density',
     'instructions' => 'Paste or type text. Counts update live. Copy results or clear. No text leaves your device.',
