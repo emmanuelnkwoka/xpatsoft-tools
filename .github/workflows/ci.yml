@@ -84,11 +84,17 @@ jobs:
 
       - name: Install PDF verification dependencies
         run: |
-          node --version; npm --version; pwd
+          echo "node: $(node --version) / npm: $(npm --version) / cwd: $(pwd)"
           npm init -y > /dev/null 2>&1
           npm install --no-audit --no-fund --loglevel=error pdf-lib@1.17.1 pdfjs-dist@3.11.174
-          echo "installed:"; ls node_modules | grep -E '^(pdf-lib|pdfjs-dist)$'
-          node -e "console.log('pdf-lib ->', require.resolve('pdf-lib')); console.log('pdfjs  ->', require.resolve('pdfjs-dist/legacy/build/pdf.js'))"
+          echo "--- installed packages ---"
+          node -e "\
+            for (const s of ['pdf-lib','pdfjs-dist','pdfjs-dist/legacy/build/pdf.js']) { \
+              try { console.log(s, '->', require.resolve(s)); } \
+              catch (e) { console.log(s, '-> RESOLVE FAILED:', e.code, e.message.split(String.fromCharCode(10))[0]); } \
+            }"
+          echo "--- module tree ---"
+          npm ls --depth=0 || true
 
       - name: PDF text-preservation verification
         working-directory: .
@@ -126,20 +132,24 @@ jobs:
           extensions: mysqli, mbstring, xml, curl, zip
           tools: composer:2, phpunit-polyfills
 
+      - name: Install PHPUnit and the PHPUnit Polyfills
+        run: |
+          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
+          php /tmp/phpunit.phar --version
+          mkdir -p /tmp/polyfills-src && cd /tmp/polyfills-src
+          composer require --no-interaction --no-progress yoast/phpunit-polyfills:^2.0
+          # The WP suite wants an absolute path to the polyfills ROOT directory.
+          cp -r /tmp/polyfills-src/vendor/yoast/phpunit-polyfills /tmp/yoast-phpunit-polyfills
+          ls -la /tmp/yoast-phpunit-polyfills | head -5
+          echo "WP_TESTS_PHPUNIT_POLYFILLS_PATH=/tmp/yoast-phpunit-polyfills" >> "$GITHUB_ENV"
+
       - name: Install WordPress test suite
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
         run: |
           bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
           ls -la "${WP_TESTS_DIR}/includes" | head
-
-      - name: Install PHPUnit and the PHPUnit Polyfills
-        run: |
-          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
-          php /tmp/phpunit.phar --version
-          mkdir -p /tmp/wp-polyfills && cd /tmp/wp-polyfills
-          composer require --no-interaction --no-progress yoast/phpunit-polyfills:^2.0
-          echo "WP_TESTS_PHPUNIT_POLYFILLS_PATH=/tmp/wp-polyfills/vendor/yoast/phpunit-polyfills" >> "$GITHUB_ENV"
+          grep -n "POLYFILLS" "${WP_TESTS_DIR}/wp-tests-config.php"
 
       - name: Run plugin integration tests under WordPress
         env:

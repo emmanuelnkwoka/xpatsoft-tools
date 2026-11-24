@@ -13,6 +13,16 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
 	exit( 1 );
 }
 
+// The WP test suite refuses to boot without the PHPUnit Polyfills. Report it
+// clearly instead of letting core throw an opaque fatal error.
+if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) && getenv( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
+	define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', getenv( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) );
+}
+if ( defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) && ! file_exists( WP_TESTS_PHPUNIT_POLYFILLS_PATH . '/phpunitpolyfills-autoload.php' ) ) {
+	echo "PHPUnit Polyfills not found at " . WP_TESTS_PHPUNIT_POLYFILLS_PATH . "\n";
+	echo "Set WP_TESTS_PHPUNIT_POLYFILLS_PATH to the polyfills root directory.\n";
+}
+
 require_once $_tests_dir . '/includes/functions.php';
 
 tests_add_filter( 'muplugins_loaded', function () {

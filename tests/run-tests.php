@@ -40,7 +40,7 @@ function wp_die($m){ throw new Exception($m); }
 function wp_safe_redirect($u){ throw new Exception('redirect:'.$u); }
 function get_bloginfo($k){ return '6.8'; }
 function wp_check_filetype_and_ext($t,$n,$m){ return array('ext'=>'pdf'); }
-function is_uploaded_file($f){ return true; }
+if ( ! function_exists( 'is_uploaded_file' ) ) { function is_uploaded_file($f){ return true; } }
 class WP_Error{ public $code; public $msg; function __construct($c,$m){$this->code=$c;$this->msg=$m;} }
 define('ABSPATH','/tmp/');
 define('XPATSOFT_TOOLS_VERSION','1.1.0');
