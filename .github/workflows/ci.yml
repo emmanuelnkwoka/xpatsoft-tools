@@ -50,7 +50,16 @@ jobs:
           exit $status
 
       - name: PHP test runner
-        run: php tests/run-tests.php
+        run: |
+          set +e
+          out=$(php tests/run-tests.php 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            fails=$(printf '%s' "$out" | grep -E '^(FAIL|Fatal|Parse|Warning|Notice)' | head -8 | tr '\n' ' ')
+            echo "::error title=PHP tests::${fails:-exit $rc (no FAIL lines captured)}"
+          fi
+          exit $rc
 
   js:
     name: Node — JS syntax, unit tests, regression tests
@@ -104,7 +113,8 @@ jobs:
           rc=$?
           echo "$out"
           if [ "$rc" -ne 0 ]; then
-            echo "::error title=PDF text-preservation test::$(echo "$out" | tail -6 | tr '\n' ' ' | cut -c1-700)"
+            key=$(printf '%s' "$out" | grep -E 'ERROR|DEPENDENCY|resolved|Cannot find module|TypeError|VERDICT' | head -6 | tr '\n' ' ')
+            echo "::error title=PDF text-preservation test::${key:-exit $rc}"
           fi
           exit $rc
 
