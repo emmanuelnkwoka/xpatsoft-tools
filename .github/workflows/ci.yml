@@ -37,9 +37,13 @@ jobs:
           files=$(find . -path ./.git -prune -o -name '*.php' -print)
           echo "Checking $(echo "$files" | wc -l) PHP files"
           for f in $files; do
-            if ! out=$(php -l "$f" 2>&1); then
-              echo "SYNTAX FAIL: $f"
+            out=$(php -l "$f" 2>&1)
+            rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "SYNTAX FAIL ($rc): $f"
               echo "$out"
+              msg=$(printf '%s' "$out" | head -3 | tr '\n' ' ' | cut -c1-500)
+              echo "::error file=$f,title=PHP syntax::${msg}"
               status=1
             fi
           done
@@ -85,7 +89,15 @@ jobs:
           npm install --no-audit --no-fund pdf-lib@1.17.1 pdfjs-dist@3.11.174
 
       - name: PDF text-preservation verification
-        run: node tests/verify-pdf-text.js
+        run: |
+          set +e
+          out=$(node tests/verify-pdf-text.js 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=PDF text-preservation test::$(echo "$out" | tail -6 | tr '\n' ' ' | cut -c1-700)"
+          fi
+          exit $rc
 
   wordpress:
     name: WordPress integration (PHPUnit + WP test suite)
@@ -124,4 +136,11 @@ jobs:
         run: |
           curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
           php /tmp/phpunit.phar --version
-          php /tmp/phpunit.phar --configuration phpunit.xml.dist --testsuite integration
+          set +e
+          out=$(php /tmp/phpunit.phar --configuration phpunit.xml.dist --testsuite integration 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=WordPress integration::$(echo "$out" | tail -8 | tr '\n' ' ' | cut -c1-700)"
+          fi
+          exit $rc
