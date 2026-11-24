@@ -33,7 +33,7 @@ Files and text never leave the device. No server storage, no forced email captur
 ## Requirements
 
 - WordPress 6.0+, PHP 7.4+
-- No build step. CDN libraries load lazily per-tool only.
+- No build step. All libraries are self-hosted (pinned versions, licences included) and enqueued lazily per tool only. Zero third-party requests.
 
 ## v1.1.0 — Security audit & engineering corrections (Assignment 02)
 

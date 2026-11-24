@@ -11,7 +11,7 @@ xpatsoft-tools.php            Bootstrap, constants, hooks
 includes/
   class-xpatsoft-tools.php    Singleton, activation, init order
   class-xpatsoft-registry.php Tool discovery & registration
-  class-xpatsoft-assets.php   Shared + per-tool asset loading (lazy CDN)
+  class-xpatsoft-assets.php   Shared + per-tool asset loading (lazy, self-hosted vendor files)
   class-xpatsoft-shortcodes.php [xpatsoft_tools] / [xpatsoft_tool]
   class-xpatsoft-admin.php    Dashboard, settings, toggles (nonce + caps)
   class-xpatsoft-security.php Caps, nonces, sanitisation, upload validation
@@ -31,7 +31,7 @@ Each `tools/<id>/<id>.php` calls `XPATSOFT_Registry::register($id, $args)`. The 
 
 ## Asset strategy
 
-Shared assets register once. Per-tool JS/CSS + CDN deps (qrcode-generator, pdf-lib/pdf.js, JSZip, jsPDF/html2canvas) enqueue only when that tool's shortcode renders. No global bloat; mobile-friendly.
+Shared assets register once. Per-tool JS/CSS + vendored deps (qrcode-generator, pdf-lib/pdf.js, JSZip, jsPDF/html2canvas) from `assets/vendor/` enqueue only when that tool's shortcode renders. No global bloat; mobile-friendly; zero third-party requests.
 
 ## Rendering
 
@@ -44,7 +44,7 @@ See Tool-development-guide.md. No changes to existing modules required.
 
 ## Performance
 
-Browser-first, zero AJAX, minimal DB (2 options). CDN with version pins. 50 MB PDF guard for low-memory devices.
+Browser-first, zero AJAX, minimal DB (2 options). Self-hosted vendor files with version pins. 50 MB PDF guard and 16 MP image budget for low-memory devices.
 
 ## Changes in v1.1.0
 

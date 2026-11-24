@@ -15,7 +15,7 @@
 ## Configuration
 - Settings (tagline, privacy note) under admin dashboard.
 - Toggle modules individually; deactivating one does not affect others.
-- No API keys required. CDN libraries load over HTTPS; ensure outbound access to `cdn.jsdelivr.net` or self-host if required.
+- No API keys required. **No outbound connections are made at runtime** — all six libraries are self-hosted in `assets/vendor/` at pinned versions, so the plugin works offline, behind a firewall, or under a strict CSP. No CDN access is needed.
 
 ## Updates
 Bump `XPATSOFT_TOOLS_VERSION` and plugin header version together. Assets use version query strings for cache-busting.
