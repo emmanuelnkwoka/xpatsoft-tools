@@ -88,7 +88,7 @@ jobs:
           npm init -y > /dev/null 2>&1
           npm install --no-audit --no-fund --loglevel=error pdf-lib@1.17.1 pdfjs-dist@3.11.174
           echo "installed:"; ls node_modules | grep -E '^(pdf-lib|pdfjs-dist)$'
-          node -e "console.log(require.resolve('pdf-lib'), require.resolve('pdfjs-dist/legacy/build/pdf.js'))"
+          node -e "console.log('pdf-lib ->', require.resolve('pdf-lib')); console.log('pdfjs  ->', require.resolve('pdfjs-dist/legacy/build/pdf.js'))"
 
       - name: PDF text-preservation verification
         working-directory: .

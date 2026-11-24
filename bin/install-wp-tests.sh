@@ -59,6 +59,8 @@ rm -rf "${WP_TESTS_DIR}/includes" "${WP_TESTS_DIR}/data"
 cp -r "${SRC}/includes" "${WP_TESTS_DIR}/includes"
 [ -d "${SRC}/data" ] && cp -r "${SRC}/data" "${WP_TESTS_DIR}/data"
 
+POLYFILLS_PATH="${WP_TESTS_PHPUNIT_POLYFILLS_PATH:-}"
+
 cat > "${WP_TESTS_DIR}/wp-tests-config.php" <<CONFIG
 <?php
 define( 'DB_NAME', '${DB_NAME}' );
@@ -73,6 +75,7 @@ define( 'WP_TESTS_EMAIL', 'admin@example.org' );
 define( 'WP_TESTS_TITLE', 'XPATSOFT Tests' );
 define( 'WP_PHP_BINARY', 'php' );
 define( 'WPLANG', '' );
+define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', '${POLYFILLS_PATH}' );
 CONFIG
 
 echo "WordPress test library ready at ${WP_TESTS_DIR}"

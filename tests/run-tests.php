@@ -104,7 +104,9 @@ foreach ( $it as $f ) { if ( $f->isFile() && substr($f->getFilename(),-4)==='.ph
 // Split the needle so this assertion cannot match its own source line.
 $eval_needle = 'ev' . 'al' . chr( 40 );
 ok( strpos($all,$eval_needle)===false, 'no dynamic code execution' );
-ok( !preg_match('/(api[_-]?key|password|secret)\s*=\s*['"][A-Za-z0-9]{16,}/i',$all), 'no hardcoded secrets' );
+$quote_class = '[' . chr( 34 ) . chr( 39 ) . ']';
+$secret_re   = '/(api[_-]?key|password|secret)\s*=\s*' . $quote_class . '[A-Za-z0-9]{16,}/i';
+ok( !preg_match( $secret_re, $all ), 'no hardcoded secrets' );
 ok( strpos($all,'manage_options')!==false, 'capability check present' );
 ok( strpos($all,'wp_verify_nonce')!==false, 'nonce check present' );
 ok( strpos($all,'esc_html')!==false, 'escaping present' );

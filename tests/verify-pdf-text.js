@@ -48,4 +48,8 @@ globalThis.ImageData = globalThis.ImageData || class { constructor() {} };
   console.log('VERDICT text preserved:', preserved);
   if (!preserved) { console.error('FAIL: text was not preserved by the optimise strategy'); process.exit(1); }
   process.exit(0);
-})().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
+})().catch(e => {
+  console.error('ERROR: ' + (e && e.message ? e.message : String(e)));
+  if (e && e.stack) console.error(e.stack.split('\n').slice(0, 8).join('\n'));
+  process.exit(1);
+});
