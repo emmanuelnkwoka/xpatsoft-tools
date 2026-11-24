@@ -5,7 +5,18 @@ const pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
  * pdf-lib page copy + object streams, then text extraction with pdf.js.
  * Fails if extracted text from the optimised PDF differs from the source.
  * Requires: npm install pdf-lib@1.17.1 pdfjs-dist@3.11.174
+ *
+ * pdf.js runs in Node without the optional `canvas` package: parsing/extraction is
+ * unaffected, only page rendering is. The warnings are noise, not errors.
  */
+// 1. Silence pdf.js's optional-canvas + standard-font noise (extraction only).
+const origWarn = console.warn.bind(console);
+console.warn = (...args) => { if (/Cannot polyfill|fetchStandardFontData/.test(args.join(' '))) return; origWarn(...args); };
+// 2. pdf.js 3.x expects a DOM-ish global; provide the minimum it touches.
+globalThis.DOMMatrix = globalThis.DOMMatrix || class { constructor() { this.a=1;this.b=0;this.c=0;this.d=1;this.e=0;this.f=0; } };
+globalThis.Path2D = globalThis.Path2D || class { constructor() {} };
+globalThis.ImageData = globalThis.ImageData || class { constructor() {} };
+
 (async () => {
   const src = await PDFDocument.create();
   const font = await src.embedFont(StandardFonts.Helvetica);

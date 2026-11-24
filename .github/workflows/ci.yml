@@ -34,9 +34,16 @@ jobs:
       - name: PHP syntax check (all plugin files)
         run: |
           status=0
-          while IFS= read -r -d '' f; do
-            php -l "$f" > /dev/null || { echo "SYNTAX FAIL: $f"; php -l "$f"; status=1; }
-          done < <(find . -path ./.git -prune -o -name '*.php' -print0)
+          files=$(find . -path ./.git -prune -o -name '*.php' -print)
+          echo "Checking $(echo "$files" | wc -l) PHP files"
+          for f in $files; do
+            if ! out=$(php -l "$f" 2>&1); then
+              echo "SYNTAX FAIL: $f"
+              echo "$out"
+              status=1
+            fi
+          done
+          echo "PHP syntax check finished with status $status"
           exit $status
 
       - name: PHP test runner
@@ -54,9 +61,16 @@ jobs:
       - name: JavaScript syntax check
         run: |
           status=0
-          while IFS= read -r f; do
-            node --check "$f" || { echo "JS SYNTAX FAIL: $f"; status=1; }
-          done < <(find . -path ./.git -prune -o -name '*.js' -not -name '*.min.js' -print)
+          files=$(find . -path ./.git -prune -o -name '*.js' -not -name '*.min.js' -print)
+          echo "Checking $(echo "$files" | wc -l) JS files"
+          for f in $files; do
+            if ! out=$(node --check "$f" 2>&1); then
+              echo "JS SYNTAX FAIL: $f"
+              echo "$out"
+              status=1
+            fi
+          done
+          echo "JS syntax check finished with status $status"
           exit $status
 
       - name: Unit tests (tool logic)
@@ -65,11 +79,13 @@ jobs:
       - name: Regression & security tests
         run: node tests/run-regression-tests.js
 
-      - name: PDF text-preservation verification
+      - name: Install PDF verification dependencies
         run: |
           npm init -y > /dev/null 2>&1
           npm install --no-audit --no-fund pdf-lib@1.17.1 pdfjs-dist@3.11.174
-          node tests/verify-pdf-text.js
+
+      - name: PDF text-preservation verification
+        run: node tests/verify-pdf-text.js
 
   wordpress:
     name: WordPress integration (PHPUnit + WP test suite)
@@ -96,18 +112,16 @@ jobs:
           tools: composer:2, phpunit-polyfills
 
       - name: Install WordPress test suite
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
         run: |
           bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
+          ls -la "${WP_TESTS_DIR}/includes" | head
 
-      - name: Prepare WP test config
+      - name: Run plugin integration tests under WordPress
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
         run: |
-          if [ ! -f tests/wp-tests-config.php ]; then echo "No WP test config; skipping"; exit 0; fi
-
-      - name: Run plugin unit tests under WordPress
-        run: |
-          if [ ! -f tests/wp-bootstrap.php ]; then
-            echo "::warning::WordPress test bootstrap not present — integration tests skipped."
-            echo "Syntax + standalone tests already passed in the php job."
-            exit 0
-          fi
-          phpunit --bootstrap tests/wp-bootstrap.php tests/wp
+          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
+          php /tmp/phpunit.phar --version
+          php /tmp/phpunit.phar --configuration phpunit.xml.dist --testsuite integration
