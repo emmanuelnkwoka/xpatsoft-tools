@@ -37,10 +37,9 @@ jobs:
           files=$(find . -path ./.git -prune -o -name '*.php' -print)
           echo "Checking $(echo "$files" | wc -l) PHP files"
           for f in $files; do
-            out=$(php -l "$f" 2>&1)
-            rc=$?
-            if [ "$rc" -ne 0 ]; then
-              echo "SYNTAX FAIL ($rc): $f"
+            # `set -e` would abort on a failing assignment, so test it explicitly.
+            if ! out=$(php -l "$f" 2>&1); then
+              echo "SYNTAX FAIL: $f"
               echo "$out"
               msg=$(printf '%s' "$out" | head -3 | tr '\n' ' ' | cut -c1-500)
               echo "::error file=$f,title=PHP syntax::${msg}"
@@ -85,10 +84,14 @@ jobs:
 
       - name: Install PDF verification dependencies
         run: |
+          node --version; npm --version; pwd
           npm init -y > /dev/null 2>&1
-          npm install --no-audit --no-fund pdf-lib@1.17.1 pdfjs-dist@3.11.174
+          npm install --no-audit --no-fund --loglevel=error pdf-lib@1.17.1 pdfjs-dist@3.11.174
+          echo "installed:"; ls node_modules | grep -E '^(pdf-lib|pdfjs-dist)$'
+          node -e "console.log(require.resolve('pdf-lib'), require.resolve('pdfjs-dist/legacy/build/pdf.js'))"
 
       - name: PDF text-preservation verification
+        working-directory: .
         run: |
           set +e
           out=$(node tests/verify-pdf-text.js 2>&1)
@@ -130,12 +133,19 @@ jobs:
           bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
           ls -la "${WP_TESTS_DIR}/includes" | head
 
+      - name: Install PHPUnit and the PHPUnit Polyfills
+        run: |
+          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
+          php /tmp/phpunit.phar --version
+          mkdir -p /tmp/wp-polyfills && cd /tmp/wp-polyfills
+          composer require --no-interaction --no-progress yoast/phpunit-polyfills:^2.0
+          echo "WP_TESTS_PHPUNIT_POLYFILLS_PATH=/tmp/wp-polyfills/vendor/yoast/phpunit-polyfills" >> "$GITHUB_ENV"
+
       - name: Run plugin integration tests under WordPress
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
         run: |
-          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
-          php /tmp/phpunit.phar --version
+          echo "Polyfills: $WP_TESTS_PHPUNIT_POLYFILLS_PATH"
           set +e
           out=$(php /tmp/phpunit.phar --configuration phpunit.xml.dist --testsuite integration 2>&1)
           rc=$?
