@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }} — syntax, tests, static checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:2
+
+      - name: PHP version
+        run: php -v
+
+      - name: PHP syntax check (all plugin files)
+        run: |
+          status=0
+          files=$(find . -path ./.git -prune -o -name '*.php' -print)
+          echo "Checking $(echo "$files" | wc -l) PHP files"
+          for f in $files; do
+            # `set -e` would abort on a failing assignment, so test it explicitly.
+            if ! out=$(php -l "$f" 2>&1); then
+              echo "SYNTAX FAIL: $f"
+              echo "$out"
+              msg=$(printf '%s' "$out" | head -3 | tr '\n' ' ' | cut -c1-500)
+              echo "::error file=$f,title=PHP syntax::${msg}"
+              status=1
+            fi
+          done
+          echo "PHP syntax check finished with status $status"
+          exit $status
+
+      - name: PHP test runner
+        run: |
+          set +e
+          out=$(php tests/run-tests.php 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            fails=$(printf '%s' "$out" | grep -E '^(FAIL|Fatal|Parse|Warning|Notice)' | head -8 | tr '\n' ' ')
+            echo "::error title=PHP tests::${fails:-exit $rc (no FAIL lines captured)}"
+          fi
+          exit $rc
+
+  js:
+    name: Node — JS syntax, unit tests, regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: JavaScript syntax check
+        run: |
+          status=0
+          files=$(find . -path ./.git -prune -o -name '*.js' -not -name '*.min.js' -print)
+          echo "Checking $(echo "$files" | wc -l) JS files"
+          for f in $files; do
+            if ! out=$(node --check "$f" 2>&1); then
+              echo "JS SYNTAX FAIL: $f"
+              echo "$out"
+              status=1
+            fi
+          done
+          echo "JS syntax check finished with status $status"
+          exit $status
+
+      - name: Unit tests (tool logic)
+        run: node tests/run-js-tests.js
+
+      - name: Regression & security tests
+        run: node tests/run-regression-tests.js
+
+      - name: Install PDF verification dependencies
+        run: |
+          echo "node: $(node --version) / npm: $(npm --version) / cwd: $(pwd)"
+          npm init -y > /dev/null 2>&1
+          npm install --no-audit --no-fund --loglevel=error pdf-lib@1.17.1 pdfjs-dist@3.11.174
+          ls -d node_modules/pdf-lib node_modules/pdfjs-dist
+          echo "XPATSOFT_PDF_DEPS=$PWD/node_modules" >> "$GITHUB_ENV"
+          echo "--- installed packages ---"
+          node -e "\
+            for (const s of ['pdf-lib','pdfjs-dist','pdfjs-dist/legacy/build/pdf.js']) { \
+              try { console.log(s, '->', require.resolve(s)); } \
+              catch (e) { console.log(s, '-> RESOLVE FAILED:', e.code, e.message.split(String.fromCharCode(10))[0]); } \
+            }"
+          echo "--- module tree ---"
+          npm ls --depth=0 || true
+
+      - name: PDF text-preservation verification
+        run: |
+          set +e
+          out=$(node tests/verify-pdf-text.js 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            key=$(printf '%s' "$out" | grep -E 'ERROR|DEPENDENCY|resolved|Cannot find module|TypeError|VERDICT' | head -6 | tr '\n' ' ')
+            echo "::error title=PDF text-preservation test::${key:-exit $rc}"
+          fi
+          exit $rc
+
+  wordpress:
+    name: WordPress integration (PHPUnit + WP test suite)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli, mbstring, xml, curl, zip
+          tools: composer:2, phpunit-polyfills
+
+      - name: Install PHPUnit and the PHPUnit Polyfills
+        run: |
+          curl -fsSL -o /tmp/phpunit.phar https://phar.phpunit.de/phpunit-9.phar
+          php /tmp/phpunit.phar --version
+          mkdir -p /tmp/polyfills-src && cd /tmp/polyfills-src
+          composer require --no-interaction --no-progress yoast/phpunit-polyfills:^2.0
+          # The WP suite wants an absolute path to the polyfills ROOT directory.
+          cp -r /tmp/polyfills-src/vendor/yoast/phpunit-polyfills /tmp/yoast-phpunit-polyfills
+          ls -la /tmp/yoast-phpunit-polyfills | head -5
+          echo "WP_TESTS_PHPUNIT_POLYFILLS_PATH=/tmp/yoast-phpunit-polyfills" >> "$GITHUB_ENV"
+
+      - name: Install WordPress test suite
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+        run: |
+          bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest
+          ls -la "${WP_TESTS_DIR}/includes" | head
+          grep -n "POLYFILLS" "${WP_TESTS_DIR}/wp-tests-config.php"
+
+      - name: Run plugin integration tests under WordPress
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+        run: |
+          echo "Polyfills: $WP_TESTS_PHPUNIT_POLYFILLS_PATH"
+          set +e
+          out=$(php /tmp/phpunit.phar --configuration phpunit.xml.dist --testsuite integration 2>&1)
+          rc=$?
+          echo "$out"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=WordPress integration::$(echo "$out" | tail -8 | tr '\n' ' ' | cut -c1-700)"
+          fi
+          exit $rc
