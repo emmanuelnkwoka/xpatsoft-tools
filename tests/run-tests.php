@@ -99,14 +99,29 @@ ok( method_exists('XPATSOFT_Shortcodes','render_tool'), 'render_tool exists' );
 
 // 7. Static checks: no eval, no secrets
 $all = '';
-$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
-foreach ( $it as $f ) { if ( $f->isFile() && substr($f->getFilename(),-4)==='.php' && strpos($f->getPathname(),'/tests/')===false ) $all .= file_get_contents($f->getPathname()); }
+$scanned = 0;
+$it = new RecursiveIteratorIterator(
+    new RecursiveCallbackFilterIterator(
+        new RecursiveDirectoryIterator( $base, FilesystemIterator::SKIP_DOTS ),
+        function ( $current ) {
+            // Skip VCS metadata, dependency trees and this test directory.
+            return ! in_array( $current->getFilename(), array( '.git', 'node_modules', 'vendor', 'tests' ), true );
+        }
+    )
+);
+foreach ( $it as $f ) {
+    if ( $f->isFile() && substr( $f->getFilename(), -4 ) === '.php' ) {
+        $all .= file_get_contents( $f->getPathname() );
+        $scanned++;
+    }
+}
 // Split the needle so this assertion cannot match its own source line.
 $eval_needle = 'ev' . 'al' . chr( 40 );
 ok( strpos($all,$eval_needle)===false, 'no dynamic code execution' );
 $quote_class = '[' . chr( 34 ) . chr( 39 ) . ']';
 $secret_re   = '/(api[_-]?key|password|secret)\s*=\s*' . $quote_class . '[A-Za-z0-9]{16,}/i';
 ok( !preg_match( $secret_re, $all ), 'no hardcoded secrets' );
+ok( $scanned > 10, 'static scan covered plugin PHP files (' . $scanned . ')' );
 ok( strpos($all,'manage_options')!==false, 'capability check present' );
 ok( strpos($all,'wp_verify_nonce')!==false, 'nonce check present' );
 ok( strpos($all,'esc_html')!==false, 'escaping present' );

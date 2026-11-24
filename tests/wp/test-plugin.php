@@ -110,7 +110,8 @@ class XPATSOFT_WP_Test extends WP_UnitTestCase {
 	}
 
 	public function test_helpers_format_and_sanitise() {
-		$this->assertSame( '1.0 KB', XPATSOFT_Helpers::format_bytes( 1024 ) );
+		$this->assertSame( '1 KB', XPATSOFT_Helpers::format_bytes( 1024, 0 ) ); /* precision is an argument */
+		$this->assertSame( '1.5 KB', XPATSOFT_Helpers::format_bytes( 1536, 2 ) );
 		$this->assertSame( 'xss', XPATSOFT_Helpers::sanitize_id( '<script>xss</script>' ) );
 		$this->assertSame( 'my-tool', XPATSOFT_Helpers::sanitize_id( 'My Tool' ) );
 	}
