@@ -122,7 +122,6 @@ jobs:
   wordpress:
     name: WordPress integration (PHPUnit + WP test suite)
     runs-on: ubuntu-latest
-    continue-on-error: true   # informational until the WP matrix is confirmed green
     services:
       mysql:
         image: mysql:8.0
